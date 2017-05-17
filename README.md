@@ -1,2 +1,3 @@
 # SfB
-Powershell code to shift users from Lync 2010 to Powershell with a logging function included 
+Powershell code used to migrate Lync 2010 users to Skype for Business Online; Switched the hosting provider, UPN and SIP address;
+Includes thorough logging,
