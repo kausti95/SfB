@@ -1,0 +1,34 @@
+﻿#Collect user's Active Directory information before changes
+#Created By Kaustubh Kapoor
+
+$file = get-content "C:\SfB Migration- Updated\UserList.csv"
+$dt= get-date -f yyyy-MM-dd_HHmm
+$less= 0
+foreach ($user in $file) {
+if( $user -eq "loginid") {continue}
+$check = get-aduser $user
+if($check.Enabled -eq $false){
+$less = $less + 1}} 
+$out = $file.count - $less - 1
+"***- COUNT -  = " + $out + ", Disabled Users - " +$less + "***" + " on - " +$dt >> "c:\SfB Migration- Updated\Output\Count of users moved- by date.txt"
+foreach ($user in $file) {
+if( $user -eq "loginid") {continue}
+ 
+ $usr= get-csADUser $user
+ $details = @{            
+                Name             = $usr.displayname              
+                SamAccountName    = $usr.samaccountname                 
+                Date_of_Move      = $dt 
+        }                           
+        $results = New-Object PSObject -Property $details  
+
+ $results| Export-Csv -NoTypeInformation  "c:\SfB Migration- Updated\Output\users_moved.csv" -Append -Verbose 
+
+ }
+ 
+''| select 'Name', 'HostingProvider', 'SipAddress' | Export-Csv "c:\SfB Migration- Updated\Output\Pre-Move-$dt.csv" -NoTypeInformation
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = get-aduser $_.loginid |Select userprincipalname, samaccountname,displayname
+    get-csUser -identity $usr.samaccountname | select Name, HostingProvider, SipAddress | Export-Csv -NoTypeInformation  "c:\SfB Migration- Updated\Output\Pre-Move-$dt.csv" -Append -Verbose
+    } 

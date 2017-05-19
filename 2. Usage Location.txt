@@ -1,0 +1,46 @@
+﻿#Created by Kaustubh (Kausty) Kapoor
+<#Gets the usagelocation of the user if the user if provisioned for MSOnline, stores in C:\SfB Migration\Output. If the usagelocation is null,
+pulls the country from AD and assigns the same.#>
+$cred= Get-Credential
+Import-Module MSOnline
+Connect-MSolService -Credential $cred
+$file = get-content "C:\SfB Migration- Updated\UserList.csv"
+$dt= get-date -f yyyy-MM-dd_hhmm
+New-item "c:\SfB Migration- Updated\Output\$dt-usagelocation.txt" -type file
+foreach($aduser in $file) 
+{
+if($aduser -eq "loginid") {continue}
+$aduser= $aduser.trim()
+$user=get-aduser $aduser
+$upn= $user.UserPrincipalName
+$location = get-msoluser -Userprincipalname $upn | select usagelocation
+$check = "$?"
+if ($check -eq "False")
+{
+$aduser+" - "+"MSOL-User does not exist" >>  "c:\SfB Migration- Updated\Output\$dt-usagelocation.txt"
+}
+else
+{
+$location= "$location"
+$location= $location.Trimstart("@{UsageLocation=")
+$location= $location.trimend("}")
+if($location -eq "")
+{
+$country= get-aduser $user.SamAccountName -Property country | select country
+$country= "$country"
+$country= $country.Trimstart("@{country=")
+$country= $country.trimend("}")
+if ($country -ne "")
+{
+$aduser+" "+"NUll,"+ " - " + $country >>"c:\SfB Migration- Updated\Output\$dt-usagelocation.txt" 
+Set-MsolUser -UserPrincipalName $upn -UsageLocation $country
+}
+else { $aduser+" "+"NUll  -  + US">>"c:\SfB Migration- Updated\Output\$dt-usagelocation.txt"
+Set-MsolUser -UserPrincipalName $upn -UsageLocation "US"}
+}
+else
+{
+$aduser+" "+ " - " +$location >> "c:\SfB Migration- Updated\Output\$dt-usagelocation.txt"
+}
+}
+}

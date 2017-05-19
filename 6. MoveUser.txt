@@ -1,0 +1,19 @@
+#Move users to SfB Online
+#Created By Kaustubh Kapoor
+
+Import-Module MSOnline
+Import-Module SkypeOnlineConnector
+
+
+$cred = Get-Credential
+$session = New-CsOnlineSession -Credential $cred -OverrideAdminDomain blackberryltd.onmicrosoft.com
+Import-PSSession $session -AllowClobber
+
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+
+    $usr = get-csaduser $_.loginid |Select userprincipalname,sipaddress
+
+    move-csuser $usr.UserPrincipalName -Target sipfed.online.lync.com -Credential $Cred -HostedmigrationOverrideUrl https://adminca1.online.lync.com/HostedMigration/hostedmigrationservice.svc -confirm:$false -verbose -ErrorAction Continue
+    }
+Remove-PSSession $session

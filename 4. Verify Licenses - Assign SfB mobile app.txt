@@ -1,0 +1,47 @@
+#Add users to SfB Mobile group
+#Created By Kaustubh Kapoor
+
+$cred= Get-Credential
+Import-Module MSOnline
+Connect-MSolService -Credential $cred
+Import-Module ActiveDirectory
+$file = get-content "C:\SfB Migration- Updated\UserList.csv"
+$dt= get-date -f yyyy-MM-dd_hhmm
+$done = 0 
+$nf= 0 
+$not = 0
+New-item "c:\SfB Migration- Updated\Output\$dt-islicensed.txt" -type file
+foreach($user in $file)
+{
+if($user -eq "loginid") {continue}
+$upn = (get-aduser $user).userprincipalname
+ $license= Get-MsolUser -UserPrincipalName $upn | select licenses
+ $check = "$?"
+if ($check -eq "False")
+{
+$user+" - "+"MSOL-User does not exist" >>  "c:\SfB Migration- Updated\Output\$dt-islicensed.txt"
+$nf++
+}
+else
+{
+ $license | ForEach-Object {
+ $check = $_.licenses}
+ $istrue = $false
+ $check | ForEach-Object {
+ if ($_.AccountSkuId -eq "ENTERPRISEPACK" -or $_.AccountSkuId -eq "STANDARDPACK") 
+{
+$istrue = $true
+$done++ 
+$user+" - "+"true" >>"c:\SfB Migration- Updated\Output\$dt-islicensed.txt"
+}
+}
+if ($istrue -eq $false) { $not++
+"**"+$user+" - "+"FALSE"+"**"  >> "c:\SfB Migration- Updated\Output\$dt-islicensed.txt"}}}
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = get-aduser $_.loginid | Select userprincipalname,sipaddress,SamAccountName
+
+    Add-ADGroupMember "eBBIDv2 - Office365 Users - Production" -Members $usr.SamAccountName -ErrorAction Continue -Verbose
+    Add-ADGroupMember "Software - SfB Testing" -Members $usr.SamAccountName -ErrorAction Continue -Verbose
+    }
+"***- COUNT_LICENSED -  = " + $done + " FAILED - " +$not + " "+ "MSOLUSER NOT FOUND -" + $nf +"***" >> "c:\SfB Migration- Updated\Output\$dt-islicensed.txt"

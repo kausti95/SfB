@@ -1,0 +1,16 @@
+#Assign E3 License
+#Created By Kaustubh Kapoor
+
+
+Import-Module MSOnline
+
+$cred = Get-Credential
+$LICENSEOPTIONS = New-MsolLicenseOptions -AccountSkuId  ENTERPRISEPACK -DisabledPlans FLOW_O365_P2,POWERAPPS_O365_P2,PROJECTWORKMANAGEMENT,SWAY,INTUNE_O365,YAMMER_ENTERPRISE,RMS_S_ENTERPRISE,EXCHANGE_S_ENTERPRISE,Deskless,TEAMS1
+
+Connect-MsolService -Credential $cred
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = get-csaduser $_.loginid |Select userprincipalname,sipaddress
+
+    Set-MsolUserLicense -UserPrincipalName $usr.UserPrincipalName -AddLicenses ENTERPRISEPACK -LicenseOptions $LICENSEOPTIONS -verbose -ErrorAction Continue
+    }

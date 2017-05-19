@@ -1,0 +1,33 @@
+﻿#Collect user's Active Directory information before changes
+#Created By Kaustubh Kapoor
+
+$file = get-content "C:\SfB Migration- Updated\UserList.csv"
+$dt= get-date -f yyyy-MM-dd_HHmm
+
+''| select 'DisplayName', 'SipAddress', 'HostingProvider' | Export-Csv "c:\SfB Migration- Updated\Output\Post-move-$dt.csv" -NoTypeInformation
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = get-aduser $_.loginid 
+    get-csUser -identity $usr.samaccountname | select DisplayName, SipAddress, HostingProvider | Export-Csv -NoTypeInformation  "c:\SfB Migration- Updated\Output\Post-Move-$dt.csv" -Append -Verbose
+    } 
+$done= 0 
+$not= 0 
+$nf= 0
+$file = get-content "C:\SfB Migration- Updated\UserList.csv"
+$dt= get-date -f yyyy-MM-dd_hhmm
+New-item "c:\SfB Migration- Updated\Output\$dt-hosting_provider.txt" -type file
+foreach($user in $file)
+{
+if($user -eq "loginid") {continue}
+$csuser = get-csuser $user
+if( $? -eq $true) {
+if(($csuser.hostingprovider) -eq "sipfed.online.lync.com")
+{$done++
+$user+" - "+"true" >>"c:\SfB Migration- Updated\Output\$dt-hosting_provider.txt"}
+else { $not++
+"**"+$user+" - "+"FALSE"+"**"  >>"c:\SfB Migration- Updated\Output\$dt-hosting_provider.txt"}}
+else { $nf++
+$user + "**CS-USER NOT FOUND**" >> "c:\SfB Migration- Updated\Output\$dt-hosting_provider.txt"}
+}
+"***- COUNT_MOVED -  = " + $done + " FAILED - " +$not + " " +"CSUSER NOT FOUND -" + $nf +"***" + "on date - " + $dt >> "c:\SfB Migration- Updated\Output\Users_Moved.txt"
+"***- COUNT_MOVED -  = " + $done + " FAILED - " +$not + " " +"CSUSER NOT FOUND -" + $nf +"***" + "on date - " + $dt >> "c:\SfB Migration- Updated\Output\$dt-hosting_provider.txt"

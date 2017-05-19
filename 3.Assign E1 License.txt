@@ -1,0 +1,18 @@
+#Assign E1 License
+#Created By Kaustubh Kapoor
+
+Import-Module MSOnline
+
+$cred = Get-Credential
+$LICENSEOPTIONS = New-MsolLicenseOptions -AccountSkuId STANDARDPACK -DisabledPlans FLOW_O365_P1,POWERAPPS_O365_P1,PROJECTWORKMANAGEMENT,SWAY,YAMMER_ENTERPRISE,EXCHANGE_S_STANDARD,Deskless,INTUNE_O365,TEAMS1
+$LICENSEOPTIONS_proplus = New-MsolLicenseOptions -AccountSkuId blackberryltd:OFFICESUBSCRIPTION -DisabledPlans EXCHANGE_S_FOUNDATION,SWAY,INTUNE_O365,ONEDRIVESTANDARD
+
+
+Connect-MsolService -Credential $cred
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = get-csaduser $_.loginid |Select userprincipalname,sipaddress
+
+    Set-MsolUserLicense -UserPrincipalName $usr.UserPrincipalName -AddLicensesSTANDARDPACK -LicenseOptions $LICENSEOPTIONS -Verbose -ErrorAction Continue
+    Set-MsolUserLicense -UserPrincipalName $usr.UserPrincipalName -AddLicenses OFFICESUBSCRIPTION -LicenseOptions $LICENSEOPTIONS_proplus -Verbose -ErrorAction Continue
+    }

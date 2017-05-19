@@ -1,0 +1,12 @@
+#Change the SIP Addresss
+#Created By Kaustubh Kapoor
+
+$oldSuffix = ‘xxx’
+$newSuffix = ‘yyy’
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = Get-CsadUser $_.loginid | Select sipaddress, SamAccountName
+    $newSIP = $usr.SIPAddress.Replace($oldSuffix,$newSuffix)
+
+    Set-CsUser -identity $usr.samaccountname -SIPAddress $newSIP -Verbose -ErrorAction Continue
+    } 

@@ -1,0 +1,48 @@
+#Assign E3 License
+#Created By Kaustubh Kapoor
+
+Import-Module MSOnline
+
+$cred = Get-Credential
+
+Connect-MsolService -Credential $cred
+
+Import-CSV "C:\SfB Migration- Updated\UserList.csv" | ForEach-Object {
+    $usr = get-csaduser $_.loginid |Select userprincipalname
+
+    Set-MsolUserLicense -UserPrincipalName $usr.UserPrincipalName -AddLicensesMCOMEETADV -verbose -ErrorAction Continue
+    }
+Remove-PSSession $session
+
+$cred = Get-Credential
+
+Connect-MsolService -Credential $cred
+$file = get-content "C:\SfB Migration- Updated\UserList.csv"
+$dt= get-date -f yyyy-MM-dd_hhmm
+New-item "c:\SfB Migration- Updated\Output\$dt-isPSTN.txt" -type file
+$done= 0
+$not= 0
+$nf = 0
+foreach($user in $file)
+{
+if($user -eq "loginid") {continue}
+$upn = (get-aduser $user).userprincipalname
+ $license= Get-MsolUser -UserPrincipalName $upn | select licenses
+ if ($? -eq $false)
+ { $nf++
+"**"+$user+" - "+"MSOLUSER NOT FOUND"+"**"  >> "c:\SfB Migration- Updated\Output\$dt-isPSTN.txt" }
+ $license | ForEach-Object {
+ $check = $_.licenses}
+ $istrue = $false
+ $check | ForEach-Object {
+ if ($_.AccountSkuId -eq "MCOMEETADV" ) 
+{
+$istrue = $true 
+$done++
+$user+" - "+"true" >>"c:\SfB Migration- Updated\Output\$dt-isPSTN.txt"
+}
+}
+if ($istrue -eq $false) { $not++
+"**"+$user+" - "+"FALSE"+"**"  >> "c:\SfB Migration- Updated\Output\$dt-isPSTN.txt"}
+ }
+"***- LICENSED -  " + $done + "-" + "NOT LICENSED - " + $not+ " MSOL Users not found - " +$nf + "***" >> "c:\SfB Migration- Updated\Output\$dt-isPSTN.txt"
